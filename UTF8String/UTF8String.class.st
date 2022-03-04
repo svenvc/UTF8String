@@ -30,14 +30,19 @@ UTF8String class >> empty [
 	^ (self on: #[]) beAscii; yourself
 ]
 
+{ #category : #accessing }
+UTF8String class >> encoder [
+	^ ZnUTF8Encoder default
+]
+
 { #category : #'instance creation' }
 UTF8String class >> fromCharacter: aCharacter [
 	| codePoint bytes |
 	codePoint := aCharacter asInteger.
 	bytes := ByteArray 
-		new: (ZnUTF8Encoder default encodedByteCountFor: codePoint) 
+		new: (self encoder encodedByteCountFor: codePoint) 
 		streamContents: [ :out | 
-			ZnUTF8Encoder default nextPutCodePoint: codePoint toStream: out ].
+			self encoder nextPutCodePoint: codePoint toStream: out ].
 	^ self on: bytes
 ]
 
@@ -60,20 +65,20 @@ UTF8String class >> streamContents: block [
 ]
 
 { #category : #copying }
-UTF8String >> , anotherZnString [
-	"Return a new string by concatenating myself with anotherZnString.
+UTF8String >> , anotherUTF8String [
+	"Return a new string by concatenating myself with anotherUTF8String.
 	In principle we should do 'Normalization Preserving Concatenation', 
 	see https://medium.com/concerning-pharo/an-implementation-of-unicode-normalization-7c6719068f43
 	For now, assume we don't need it."
 	
-	^ self on: self utf8EncodedBytes , anotherZnString utf8EncodedBytes
+	^ self on: self utf8EncodedBytes , anotherUTF8String utf8EncodedBytes
 ]
 
 { #category : #comparing }
-UTF8String >> = anotherZnString [
-	self == anotherZnString ifTrue: [ ^ true ].
-	self class = anotherZnString class ifFalse: [ ^ false ].
-	^ bytes = anotherZnString utf8EncodedBytes
+UTF8String >> = anotherUTF8String [
+	self == anotherUTF8String ifTrue: [ ^ true ].
+	self class = anotherUTF8String class ifFalse: [ ^ false ].
+	^ bytes = anotherUTF8String utf8EncodedBytes
 ]
 
 { #category : #converting }
@@ -170,7 +175,7 @@ UTF8String >> collect: block [
 
 { #category : #private }
 UTF8String >> computeCountAndIndex [
-	self isEmpty ifTrue: [ ^ count := 0 ].
+	self isEmpty ifTrue: [ count := 0. ^ self ].
 	"the number of characters cannot be larger than the byte size"
 	bytes size <= self stride
 		ifTrue: [ self computeCountNoIndex ]
@@ -224,8 +229,7 @@ UTF8String >> copyUpTo: aCharacter [
 
 { #category : #private }
 UTF8String >> decodeCharacterAt: byteIndex [
-	^ ZnUTF8Encoder default 
-		nextFromStream: (bytes readStream position: byteIndex - 1)
+	^ self encoder nextFromStream: (bytes readStream position: byteIndex - 1)
 ]
 
 { #category : #enumerating }
@@ -262,14 +266,19 @@ UTF8String >> encodedByteCountAt: byteIndex [
 { #category : #private }
 UTF8String >> encodedBytesFor: codePoint [
 	^ ByteArray 
-			new: (ZnUTF8Encoder default encodedByteCountFor: codePoint) 
+			new: (self encoder encodedByteCountFor: codePoint) 
 			streamContents: [ :out | 
-				ZnUTF8Encoder default nextPutCodePoint: codePoint toStream: out ]
+				self encoder nextPutCodePoint: codePoint toStream: out ]
 ]
 
 { #category : #private }
 UTF8String >> encodedCharacterAt: characterIndex [	
 	^ self decodeCharacterAt: (self byteIndexAt: characterIndex)
+]
+
+{ #category : #private }
+UTF8String >> encoder [
+	^ self class encoder
 ]
 
 { #category : #testing }
@@ -278,18 +287,18 @@ UTF8String >> endsWith: suffixZnString [
 ]
 
 { #category : #'error handling' }
-UTF8String >> error: message [
-	ZnCharacterEncodingError signal: message
-]
-
-{ #category : #'error handling' }
 UTF8String >> errorEmptyCollection [
 	 CollectionIsEmpty signalWith: self 
 ]
 
 { #category : #'error handling' }
+UTF8String >> errorIllegalContinuationByte [
+	^ self encoder errorIllegalContinuationByte
+]
+
+{ #category : #'error handling' }
 UTF8String >> errorIllegalLeadingByte [
-	^ self error: 'Illegal leading byte for utf-8 encoding'
+	^ self encoder errorIllegalLeadingByte
 ]
 
 { #category : #'error handling' }
@@ -397,7 +406,7 @@ UTF8String >> last [
 		ifTrue: [ bytes last asCharacter ]
 		ifFalse: [ | binaryReadStream |
 			binaryReadStream := bytes readStream setToEnd.
-			ZnUTF8Encoder default
+			self encoder
 				backOnStream: binaryReadStream;
 				nextFromStream: binaryReadStream ]
 ]
@@ -442,10 +451,10 @@ UTF8String >> reverseDo: block [
 	| binaryReadStream |
 	self isEmpty ifTrue: [ ^ self ].
 	binaryReadStream := bytes readStream setToEnd.
-	[ block value: (ZnUTF8Encoder default
+	[ block value: (self encoder
 		backOnStream: binaryReadStream;
 		nextFromStream: binaryReadStream) ] doWhileTrue: [
-			ZnUTF8Encoder default backOnStream: binaryReadStream.
+			self encoder backOnStream: binaryReadStream.
 			binaryReadStream position > 0 ]
 ]
 
@@ -468,4 +477,45 @@ UTF8String >> stride [
 { #category : #accessing }
 UTF8String >> utf8EncodedBytes [
 	^ bytes
+]
+
+{ #category : #initialization }
+UTF8String >> validate [
+	"Validate my byte representation, checking if the UTF8 encoding is correct.
+	Since this requires a full scan, I compute my count and index as well.
+	Return true when I am valid, false otherwise."
+	
+	self isEmpty ifTrue: [ count := 0. ^ true ].
+	"the number of characters cannot be larger than the byte size"
+	^ bytes size <= self stride
+		ifTrue: [ self validateNoIndex ]
+		ifFalse: [ self validateFullIndex ]
+]
+
+{ #category : #private }
+UTF8String >> validateFullIndex [
+	count := 0.
+	[
+		index := Array streamContents: [ :out | | readStream |
+			readStream := self readStream.
+			[ readStream atEnd ] whileFalse: [
+				count := count + 1.
+				readStream next.
+				(count > self stride and: [ (count - 1 \\ self stride) = 0 ]) 
+					ifTrue: [ out nextPut: readStream wrappedStream position ] ] ]
+	] on: ZnCharacterEncodingError do: [ ^ false ].
+	^ true
+]
+
+{ #category : #private }
+UTF8String >> validateNoIndex [
+	count := 0.
+	index := Array empty.
+	[ | readStream |
+		readStream := self readStream.
+		[ readStream atEnd ] whileFalse: [
+			readStream next. 
+			count := count + 1 ] 
+	] on: ZnCharacterEncodingError do: [ ^ false ].
+	^ true
 ]
