@@ -38,21 +38,39 @@ UTF8StringTest >> smallString [
 	^ 'Les élèves Français à 10 €'
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
 UTF8StringTest >> testAsLowercase [
 	self 
 		assert: (UTF8String fromSystemString: self smallString) asLowercase 
 		equals: (UTF8String fromSystemString: self smallString asLowercase)
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
+UTF8StringTest >> testAsUTF8String [
+	| string |
+	self 
+		assert: (UTF8String fromSystemString: self smallString)
+		equals: self smallString asUTF8String.
+	string := #[ 65 66 67 ] asUTF8String.
+	self assert: string equals: 'ABC' asUTF8String.
+	self assert: string identicalTo: string asUTF8String  
+]
+
+{ #category : #tests }
 UTF8StringTest >> testAsUppercase [
 	self 
 		assert: (UTF8String fromSystemString: self smallString) asUppercase 
 		equals: (UTF8String fromSystemString: self smallString asUppercase)
 ]
 
-{ #category : #testing }
+{ #category : #tests }
+UTF8StringTest >> testCapitalized [
+	self 
+		assert: (UTF8String fromSystemString: self smallString) capitalized 
+		equals: (UTF8String fromSystemString: self smallString capitalized)
+]
+
+{ #category : #tests }
 UTF8StringTest >> testConcatenation [
 	| first second concatenation |
 	first := UTF8String fromSystemString: self firstString.
@@ -61,7 +79,7 @@ UTF8StringTest >> testConcatenation [
 	self assert: first , second equals: concatenation 
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 UTF8StringTest >> testEmpty [
 	| emptyString |
 	emptyString := UTF8String empty.
@@ -107,7 +125,7 @@ UTF8StringTest >> testIncludesSubstring [
 		self assert: (string includesSubstring: (UTF8String fromSystemString: each)) ]
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
 UTF8StringTest >> testIndexNormal [
 	| string map |
 	string := UTF8String fromSystemString: self normalString.
@@ -118,7 +136,7 @@ UTF8StringTest >> testIndexNormal [
 		self assert: (string characterIndexAt: spec value) equals: spec key ]
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
 UTF8StringTest >> testIndexOf [
 	| str |
 	str := UTF8String fromSystemString: self normalString.
@@ -127,7 +145,7 @@ UTF8StringTest >> testIndexOf [
 	self assert: (str indexOf: $A) equals: 0
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
 UTF8StringTest >> testIndexSmall [
 	| string map |
 	string := UTF8String fromSystemString: self smallString.
@@ -138,7 +156,7 @@ UTF8StringTest >> testIndexSmall [
 		self assert: (string characterIndexAt: spec value) equals: spec key ]
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 UTF8StringTest >> testNormal [
 	| string |
 	string := UTF8String fromSystemString: self normalString.
@@ -149,7 +167,7 @@ UTF8StringTest >> testNormal [
 	self deny: string isEmpty
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 UTF8StringTest >> testNormalAscii [
 	| string |
 	string := UTF8String fromSystemString: self normalAsciiString.
@@ -169,7 +187,7 @@ UTF8StringTest >> testReverse [
 	
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 UTF8StringTest >> testSmall [
 	| smallString |
 	smallString := UTF8String fromSystemString: self smallString.
@@ -179,7 +197,7 @@ UTF8StringTest >> testSmall [
 	self deny: smallString isAscii
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 UTF8StringTest >> testSmallAscii [
 	| smallString |
 	smallString := UTF8String fromSystemString: self smallAsciiString.
@@ -198,7 +216,7 @@ UTF8StringTest >> testStreamContents [
 	self assert: built equals: string
 ]
 
-{ #category : #accessing }
+{ #category : #tests }
 UTF8StringTest >> testValidate [
 	#( firstString secondString normalString normalAsciiString smallString smallAsciiString ) do: [ :each |
 		self assert: (UTF8String fromSystemString: (self perform: each)) validate ].

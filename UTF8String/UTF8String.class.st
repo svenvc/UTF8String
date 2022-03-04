@@ -92,6 +92,16 @@ UTF8String >> asString [
 ]
 
 { #category : #converting }
+UTF8String >> asUTF8Bytes [
+	^ self utf8EncodedBytes
+]
+
+{ #category : #converting }
+UTF8String >> asUTF8String [
+	^ self
+]
+
+{ #category : #converting }
 UTF8String >> asUppercase [
 	^ self collect: [ :each | each asUppercase ]
 ]
@@ -141,6 +151,12 @@ UTF8String >> byteIndexAt: characterIndex [
 
 { #category : #converting }
 UTF8String >> capitalized [
+	| first |
+	first := true.
+	^ self collect: [ :each | 
+			first
+				ifTrue: [ first := false. each asUppercase ]
+				ifFalse: [ each ] ]
 ]
 
 { #category : #private }
