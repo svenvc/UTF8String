@@ -110,6 +110,11 @@ UTF8StringTest >> testEnumeration [
 ]
 
 { #category : #tests }
+UTF8StringTest >> testFirst [
+	self assert: self firstString asUTF8String first equals: $F 
+]
+
+{ #category : #tests }
 UTF8StringTest >> testIncludes [
 	| string |
 	string := UTF8String fromSystemString: self normalString.
@@ -154,6 +159,11 @@ UTF8StringTest >> testIndexSmall [
 			out nextPut: characterIndex -> (string byteIndexAt: characterIndex) ] ].
 	map do: [ :spec |
 		self assert: (string characterIndexAt: spec value) equals: spec key ]
+]
+
+{ #category : #tests }
+UTF8StringTest >> testLast [
+	self assert: self firstString asUTF8String last equals: $1 
 ]
 
 { #category : #tests }

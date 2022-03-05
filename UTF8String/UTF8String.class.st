@@ -27,6 +27,8 @@ Class {
 
 { #category : #requirements }
 UTF8String class >> empty [
+	"Return the empty UTF8String instance"
+
 	^ (self on: #[]) beAscii; yourself
 ]
 
@@ -37,6 +39,8 @@ UTF8String class >> encoder [
 
 { #category : #'instance creation' }
 UTF8String class >> fromCharacter: aCharacter [
+	"Return a new UTF8String containing just one character, aCharacter"
+	
 	| codePoint bytes |
 	codePoint := aCharacter asInteger.
 	bytes := ByteArray 
@@ -47,17 +51,24 @@ UTF8String class >> fromCharacter: aCharacter [
 ]
 
 { #category : #'instance creation' }
-UTF8String class >> fromSystemString: string [
-	^ self on: string utf8Encoded 
+UTF8String class >> fromSystemString: systemString [
+	"Return a new UTF8String containing the characters in systemString."
+	
+	^ self on: systemString utf8Encoded 
 ]
 
 { #category : #'instance creation' }
 UTF8String class >> on: utf8EncodedBytes [
+	"Return an new UTF8String containing the characters encoded in utf8EncodedBytes, a ByteArray.
+	Note that no validation is performed. See #validate"
+	
 	^ self new on: utf8EncodedBytes; yourself
 ]
 
 { #category : #'instance creation' }
 UTF8String class >> streamContents: block [
+	"Create a new UTF8String by writing Characters written to the Character WriteStream passed to block"
+	
 	| utf8EncodedBytes |
 	utf8EncodedBytes := ByteArray streamContents: [ :binaryWriteStream |
 		block value: (ZnCharacterWriteStream on: binaryWriteStream) ].
@@ -76,33 +87,52 @@ UTF8String >> , anotherUTF8String [
 
 { #category : #comparing }
 UTF8String >> = anotherUTF8String [
+	"Return true when I am equal to anotherUTF8String, false otherwise"
+	
 	self == anotherUTF8String ifTrue: [ ^ true ].
 	self class = anotherUTF8String class ifFalse: [ ^ false ].
 	^ bytes = anotherUTF8String utf8EncodedBytes
 ]
 
 { #category : #converting }
+UTF8String >> asByteArray [
+	"Convert me to a ByteArray containing my UTF8 encoded representation"
+	
+	^ self utf8EncodedBytes
+]
+
+{ #category : #converting }
 UTF8String >> asLowercase [
+	"Return a copy of me with each character converted to lowercase."
+	
 	^ self collect: [ :each | each asLowercase ]
 ]
 
 { #category : #converting }
 UTF8String >> asString [
+	"Convert me to a system String"
+	
 	^ bytes utf8Decoded
 ]
 
 { #category : #converting }
 UTF8String >> asUTF8Bytes [
+	"Return a ByteArray with my UTF8 encoded representation"
+	
 	^ self utf8EncodedBytes
 ]
 
 { #category : #converting }
 UTF8String >> asUTF8String [
+	"Convert me to an UTF8String"
+	
 	^ self
 ]
 
 { #category : #converting }
 UTF8String >> asUppercase [
+	"Return a copy of me with each character converted to uppercase"
+	
 	^ self collect: [ :each | each asUppercase ]
 ]
 
@@ -120,14 +150,17 @@ UTF8String >> at: characterIndex [
 
 { #category : #initialization }
 UTF8String >> beAscii [
+	"Mark me as being pure 7-bit ASCII, which means each character is encoded as one byte"
+	
 	count := bytes size.
 	index := Array empty
-	
 ]
 
 { #category : #testing }
-UTF8String >> beginsWith: prefixZnString [
-	^ bytes beginsWith: prefixZnString utf8EncodedBytes
+UTF8String >> beginsWith: prefixUTF8String [
+	"Return true when I begin with prefixUTF8String, false otherwise."
+	
+	^ bytes beginsWith: prefixUTF8String utf8EncodedBytes
 ]
 
 { #category : #private }
@@ -151,6 +184,8 @@ UTF8String >> byteIndexAt: characterIndex [
 
 { #category : #converting }
 UTF8String >> capitalized [
+	"Return a copy of me with my first character capitalized"
+	
 	| first |
 	first := true.
 	^ self collect: [ :each | 
@@ -183,6 +218,8 @@ UTF8String >> characterIndexAt: byteIndex [
 
 { #category : #enumerating }
 UTF8String >> collect: block [
+	"Create a copy of me with each Character transformed by block, in order, from first to last"
+	
 	self isEmpty ifTrue: [ ^ self ].
 	^ self class streamContents: [ :out |
 			self do: [ :each |
@@ -223,6 +260,9 @@ UTF8String >> computeCountNoIndex [
 
 { #category : #copying }
 UTF8String >> copyFrom: startIndex to: stopIndex [
+	"Return a new string, a copy of me from startIndex to stopIndex, both character indices.
+	Signal SubscriptOutOfBounds or CollectionIsEmpty in case of illegal indices."
+	
 	| startByteIndex stopByteIndex substring |
 	self boundsCheck: startIndex. 
 	self boundsCheck: stopIndex. 
@@ -236,6 +276,9 @@ UTF8String >> copyFrom: startIndex to: stopIndex [
 
 { #category : #copying }
 UTF8String >> copyUpTo: aCharacter [
+	"Return a new string, a copy of me, from my first character 
+	up to but not including the first occurrence of aCharacter."
+	
 	| readStream |
 	readStream := self readStream.
 	^ self class streamContents: [ :out |
@@ -250,6 +293,8 @@ UTF8String >> decodeCharacterAt: byteIndex [
 
 { #category : #enumerating }
 UTF8String >> do: block [
+	"Execute block with each of my Characters as argument, in order, from first to last"
+	
 	| readStream |
 	self isEmpty ifTrue: [ ^ self ].
 	readStream := self readStream.
@@ -298,8 +343,10 @@ UTF8String >> encoder [
 ]
 
 { #category : #testing }
-UTF8String >> endsWith: suffixZnString [
-	^ bytes endsWith: suffixZnString utf8EncodedBytes
+UTF8String >> endsWith: suffixUTF8String [
+	"Return true when I end with suffixUTF8String, false otherwise."
+	
+	^ bytes endsWith: suffixUTF8String utf8EncodedBytes
 ]
 
 { #category : #'error handling' }
@@ -328,6 +375,9 @@ UTF8String >> errorOutOfBounds: characterIndex [
 
 { #category : #accessing }
 UTF8String >> first [
+	"Return my first Character.
+	Signal CollectionIsEmpty when there is no such character."
+
 	self emptyCheck.
 	^ self isAscii 
 		ifTrue: [ bytes first asCharacter ] 
@@ -336,11 +386,15 @@ UTF8String >> first [
 
 { #category : #comparing }
 UTF8String >> hash [
+	"Return my hash, a SmallInteger related to my identity"
+
 	^ bytes hash
 ]
 
 { #category : #testing }
 UTF8String >> includes: aCharacter [
+	"Return true when I include aCharacter, false otherwise."
+	
 	| codePoint |
 	self isEmpty ifTrue: [ ^ false ].
 	codePoint := aCharacter asInteger.
@@ -356,24 +410,28 @@ UTF8String >> includes: aCharacter [
 ]
 
 { #category : #testing }
-UTF8String >> includesSubstring: aSubZnString [
+UTF8String >> includesSubstring: aSubUTF8String [
+	"Return true when I include aSubUTF8String, false otherwise.
+	The empty string contains nothing, an empty string is part of any non empty string."
+	
 	self isEmpty ifTrue: [ ^ false ].
-	aSubZnString isEmpty ifTrue: [ ^ true ].
-	^ (bytes indexOfSubCollection: aSubZnString utf8EncodedBytes startingAt: 1) ~= 0
+	aSubUTF8String isEmpty ifTrue: [ ^ true ].
+	^ (bytes indexOfSubCollection: aSubUTF8String utf8EncodedBytes startingAt: 1) ~= 0
 ]
 
 { #category : #accessing }
 UTF8String >> indexOf: aCharacter [
-	| offset |
-	offset := 1.
-	self do: [ :each |
-		each = aCharacter ifTrue: [ ^ offset ].
-		offset := offset + 1 ].
-	^ 0
+	"Return the index of the first occurrence of aCharacter in me.
+	If I do not contain aCharacter, return 0."
+	
+	^ self indexOf: aCharacter startingAt: 1
 ]
 
 { #category : #accessing }
 UTF8String >> indexOf: aCharacter startingAt: characterOffset [
+	"Return the index of the first occurrence of aCharacter after characterOffset in me.
+	If I do not contain aCharacter after characterOffset, return 0."
+
 	| codePoint found |
 	self isEmpty ifTrue: [ ^ false ].
 	self boundsCheck: characterOffset. 
@@ -391,11 +449,14 @@ UTF8String >> indexOf: aCharacter startingAt: characterOffset [
 ]
 
 { #category : #accessing }
-UTF8String >> indexOfSubCollection: aSubZnString [
+UTF8String >> indexOfSubCollection: aSubUTF8String [
+	"Return the index of the first occurrence of aSubUTF8String in me.
+	Return 0 if aSubUTF8String does not occur in me."
+	
 	| byteIndex |
 	self isEmpty ifTrue: [ ^ 0 ].
-	aSubZnString isEmpty ifTrue: [ ^ 1 ].
-	byteIndex := bytes indexOfSubCollection: aSubZnString utf8EncodedBytes startingAt: 1.
+	aSubUTF8String isEmpty ifTrue: [ ^ 1 ].
+	byteIndex := bytes indexOfSubCollection: aSubUTF8String utf8EncodedBytes startingAt: 1.
 	^ byteIndex ~= 0
 		ifTrue: [ self characterIndexAt: byteIndex ]
 		ifFalse: [ 0 ]
@@ -403,7 +464,7 @@ UTF8String >> indexOfSubCollection: aSubZnString [
 
 { #category : #testing }
 UTF8String >> isAscii [
-	"Return true when I am pure 7-bit ASCII, which means each character is encoded as one byte"
+	"Return true when I am pure 7-bit ASCII, which means each character is encoded as one byte."
 	
 	^ bytes size = count
 ]
@@ -417,6 +478,9 @@ UTF8String >> isEmpty [
 
 { #category : #accessing }
 UTF8String >> last [
+	"Return my last Character.
+	Signal CollectionIsEmpty when there is no such character."
+
 	self emptyCheck.
 	^ self isAscii
 		ifTrue: [ bytes last asCharacter ]
@@ -429,14 +493,15 @@ UTF8String >> last [
 
 { #category : #initialization }
 UTF8String >> on: utf8EncodedBytes [
+	"Initialize me on utf8EncodedBytes. No validation takes place. See #validate."
+	
 	bytes := utf8EncodedBytes 
 ]
 
 { #category : #printing }
-UTF8String >> printOn: stream [
+UTF8String >> printDebugOn: stream [
 	| max readStream |
-	super printOn: stream.
-	stream nextPut: $(; nextPut: $'.
+	stream nextPutAll: 'a UTF8String('; nextPut: $'.
 	max := self stride / 2.
 	readStream := self readStream.
 	[ readStream atEnd or: [ max = 0 ] ] whileFalse: [
@@ -449,8 +514,26 @@ UTF8String >> printOn: stream [
 	stream nextPut: $)
 ]
 
-{ #category : #converting }
+{ #category : #printing }
+UTF8String >> printOn: stream [
+	| readStream |
+	stream nextPut: $'.
+	readStream := self readStream.
+	[ readStream atEnd ] whileFalse: [
+		stream peek = $' ifTrue: [ stream nextPut: $' ].
+		stream nextPut: readStream next ].
+	stream nextPut: $'.
+]
+
+{ #category : #streaming }
+UTF8String >> putOn: aStream [
+	aStream nextPutAll: self
+]
+
+{ #category : #enumerating }
 UTF8String >> readStream [
+	"Return a Character ReadStream to iterate over my contents in order, from first to last"
+	
 	^ ZnCharacterReadStream on: bytes readStream
 ]
 
@@ -464,6 +547,8 @@ UTF8String >> reverse [
 
 { #category : #enumerating }
 UTF8String >> reverseDo: block [
+	"Execute block with each of my Characters as argument, in reverse order, from last to first"
+
 	| binaryReadStream |
 	self isEmpty ifTrue: [ ^ self ].
 	binaryReadStream := bytes readStream setToEnd.
@@ -490,8 +575,17 @@ UTF8String >> stride [
 	^ 32
 ]
 
+{ #category : #converting }
+UTF8String >> utf8Encoded [
+	"Return a ByteArray with my UTF8 encoded representation"
+	
+	^ self utf8EncodedBytes
+]
+
 { #category : #accessing }
 UTF8String >> utf8EncodedBytes [
+	"Return a ByteArray with a UTF8 encoded representation of me."
+	
 	^ bytes
 ]
 
