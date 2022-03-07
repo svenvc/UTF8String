@@ -27,22 +27,25 @@ Class {
 
 { #category : #requirements }
 UTF8String class >> empty [
-	"Return the empty UTF8String instance"
+	"Return the empty UTF8String instance.
+	Since my instances are readonly, this could be cached."
 
 	^ (self on: #[]) beAscii; yourself
 ]
 
 { #category : #accessing }
 UTF8String class >> encoder [
+	"Return the ZnCharacterEncoder that I use, obviously UTF8."
+	
 	^ ZnUTF8Encoder default
 ]
 
 { #category : #'instance creation' }
-UTF8String class >> fromCharacter: aCharacter [
-	"Return a new UTF8String containing just one character, aCharacter"
+UTF8String class >> fromCharacter: character [
+	"Return a new UTF8String containing a single character"
 	
 	| codePoint bytes |
-	codePoint := aCharacter asInteger.
+	codePoint := character asInteger.
 	bytes := ByteArray 
 		new: (self encoder encodedByteCountFor: codePoint) 
 		streamContents: [ :out | 
@@ -67,7 +70,7 @@ UTF8String class >> on: utf8EncodedBytes [
 
 { #category : #'instance creation' }
 UTF8String class >> streamContents: block [
-	"Create a new UTF8String by writing Characters written to the Character WriteStream passed to block"
+	"Create a new UTF8String by writing characters to the character WriteStream passed to block"
 	
 	| utf8EncodedBytes |
 	utf8EncodedBytes := ByteArray streamContents: [ :binaryWriteStream |
@@ -435,18 +438,18 @@ UTF8String >> first [
 UTF8String >> format: collection [ 
 	"Format the receiver by interpolating elements from collection (see String>>#format:)"
 	
-	^ self class streamContents: [ :result | | stream |
-		stream := self readStream.
-		[ stream atEnd ] whileFalse: [ | currentChar | 
-			(currentChar := stream next) == ${
+	^ self class streamContents: [ :out | | in |
+		in := self readStream.
+		[ in atEnd ] whileFalse: [ | currentChar | 
+			(currentChar := in next) == ${
 				ifTrue: [ | expression key | 
-					expression := stream upTo: $}.
+					expression := in upTo: $}.
 					key := Integer readFrom: expression ifFail: [ expression ].
-					result nextPutAll: (collection at: key) asString asUTF8String ]
+					out nextPutAll: (collection at: key) asString asUTF8String ]
 				ifFalse: [
 					currentChar == $\
-						ifTrue: [ stream atEnd ifFalse: [ result nextPut: stream next ] ]
-						ifFalse: [ result nextPut: currentChar ] ] ] ]
+						ifTrue: [ in atEnd ifFalse: [ out nextPut: in next ] ]
+						ifFalse: [ out nextPut: currentChar ] ] ] ]
 ]
 
 { #category : #comparing }
@@ -649,10 +652,7 @@ UTF8String >> stride [
 
 { #category : #comparing }
 UTF8String >> threeWayCompareTo: anotherUTF8String [
-	"Do a three-way comparison between the receiver and anotherUTF8String, returning
-	-1 if self < anotherUTF8String
-	0 if self = anotherUTF8String
-	1 if self > anotherUTF8String"
+	"Do a three-way comparison between the receiver and anotherUTF8String (see Magnitude>>#threeWayCompareTo:)"
 	
 	| readStream otherReadStream character otherCharacter |
 	readStream := self readStream.
