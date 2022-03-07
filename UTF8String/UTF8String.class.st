@@ -86,12 +86,40 @@ UTF8String >> , anotherUTF8String [
 ]
 
 { #category : #comparing }
+UTF8String >> < anotherUTF8String [
+	"Return true when I come lexicographically before anotherUTF8String, false otherwise"
+	
+	^ (self threeWayCompareTo: anotherUTF8String) < 0 
+]
+
+{ #category : #comparing }
+UTF8String >> <= anotherUTF8String [
+	"Return true when I come lexicographically before or an equal to anotherUTF8String, false otherwise"
+	
+	^ (self threeWayCompareTo: anotherUTF8String) <= 0 
+]
+
+{ #category : #comparing }
 UTF8String >> = anotherUTF8String [
 	"Return true when I am equal to anotherUTF8String, false otherwise"
 	
 	self == anotherUTF8String ifTrue: [ ^ true ].
 	self class = anotherUTF8String class ifFalse: [ ^ false ].
 	^ bytes = anotherUTF8String utf8EncodedBytes
+]
+
+{ #category : #comparing }
+UTF8String >> > anotherUTF8String [
+	"Return true when I come lexicographically after anotherUTF8String, false otherwise"
+	
+	^ (self threeWayCompareTo: anotherUTF8String) > 0 
+]
+
+{ #category : #comparing }
+UTF8String >> >= anotherUTF8String [
+	"Return true when I come lexicographically after or am equal to anotherUTF8String, false otherwise"
+	
+	^ (self threeWayCompareTo: anotherUTF8String) >= 0 
 ]
 
 { #category : #converting }
@@ -573,6 +601,26 @@ UTF8String >> stride [
 	"Return the stride, the constant I use internally to build my index"
 	
 	^ 32
+]
+
+{ #category : #comparing }
+UTF8String >> threeWayCompareTo: anotherUTF8String [
+	"Do a three-way comparison between the receiver and anotherUTF8String, returning
+	-1 if self < anotherUTF8String
+	0 if self = anotherUTF8String
+	1 if self > anotherUTF8String"
+	
+	| readStream otherReadStream character otherCharacter |
+	readStream := self readStream.
+	otherReadStream := anotherUTF8String readStream.
+	[ readStream atEnd or: [ otherReadStream atEnd ] ] whileFalse: [ 
+		character := readStream next.
+		otherCharacter := otherReadStream next.
+		character = otherCharacter 
+			ifFalse: [ 
+				character < otherCharacter ifTrue: [ ^ -1 ] ifFalse: [ ^ 1 ] ] ].
+	(readStream atEnd and: [ otherReadStream atEnd ]) ifTrue: [ ^ 0 ].
+	^ readStream atEnd ifTrue: [ -1 ] ifFalse: [ 1 ]
 ]
 
 { #category : #converting }

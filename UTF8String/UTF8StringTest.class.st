@@ -115,6 +115,23 @@ UTF8StringTest >> testFirst [
 ]
 
 { #category : #tests }
+UTF8StringTest >> testHashing [
+	| words dictionary set |
+	words := (String loremIpsum findTokens: ' .') , (self firstString findTokens: ' :-').
+	words := words collect: #asUTF8String.
+	dictionary := Dictionary new.
+	words do: [ :each | dictionary at: each put: each ].
+	self assert: (dictionary at: words first) equals: words first.
+	self assert: (dictionary at: words last) equals: words last.
+	self assert: (dictionary includesKey: 'Français' asUTF8String).
+	set := words asSet.
+	self assert: (set includes: words first).
+	self assert: (set includes: words last).
+	self assert: (set includes: 'Français' asUTF8String).
+
+]
+
+{ #category : #tests }
 UTF8StringTest >> testIncludes [
 	| string |
 	string := UTF8String fromSystemString: self normalString.
@@ -215,6 +232,18 @@ UTF8StringTest >> testSmallAscii [
 	1 to: smallString size do: [ :index | 
 		self assert: (smallString at: index) equals: (self smallAsciiString at: index) ].
 	self assert: smallString isAscii
+]
+
+{ #category : #tests }
+UTF8StringTest >> testSorting [
+	| words |
+	words := (String loremIpsum findTokens: ' .') , (self firstString findTokens: ' :-').
+	self 
+		assert: (words collect: #asUTF8String) sorted 
+		equals: (words sorted collect: #asUTF8String).
+	self 
+		assert: ((words collect: #asUTF8String) sorted: #yourself descending) 
+		equals: ((words sorted: #yourself descending) collect: #asUTF8String).
 ]
 
 { #category : #tests }
