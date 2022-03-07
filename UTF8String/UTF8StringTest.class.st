@@ -110,8 +110,40 @@ UTF8StringTest >> testEnumeration [
 ]
 
 { #category : #tests }
+UTF8StringTest >> testFindTokens [
+	self 
+		assert: ('AB/CD/EF' asUTF8String findTokens: $/) asArray 
+		equals: { 'AB' asUTF8String . 'CD' asUTF8String . 'EF' asUTF8String }.
+	self 
+		assert: ('AB/CD/EF/' asUTF8String findTokens: $/) asArray 
+		equals: { 'AB' asUTF8String . 'CD' asUTF8String . 'EF' asUTF8String }.
+	self 
+		assert: ('/AB/é€è/EF' asUTF8String findTokens: $/) asArray 
+		equals: { 'AB' asUTF8String . 'é€è' asUTF8String . 'EF' asUTF8String }.
+	self 
+		assert: ('AB - CD - EF' asUTF8String findTokens: ' -' asUTF8String) asArray
+		equals: { 'AB' asUTF8String . 'CD' asUTF8String . 'EF' asUTF8String }.
+	self 
+		assert: ('ABC' asUTF8String findTokens: '+-€' asUTF8String) asArray
+		equals: { 'ABC' asUTF8String }.
+	self 
+		assert: (UTF8String empty findTokens: '+-' asUTF8String) asArray
+		equals: { }. 
+]
+
+{ #category : #tests }
 UTF8StringTest >> testFirst [
 	self assert: self firstString asUTF8String first equals: $F 
+]
+
+{ #category : #tests }
+UTF8StringTest >> testFormat [
+	self 
+		assert: ('{1} € ~= {2} €' asUTF8String format: #(100 200)) 
+		equals: '100 € ~= 200 €' asUTF8String.
+	self 
+		assert: ('{one} € ~= {two} €' asUTF8String format: { #one->100. #two->200 } asDictionary) 
+		equals: '100 € ~= 200 €' asUTF8String. 
 ]
 
 { #category : #tests }

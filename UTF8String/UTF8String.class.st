@@ -402,6 +402,25 @@ UTF8String >> errorOutOfBounds: characterIndex [
 ]
 
 { #category : #accessing }
+UTF8String >> findTokens: delimiters [
+	"Return a collection of tokens, substrings, in me, separated by delimiters.
+	Delimiters is a collection of characters or a single character.
+	Delimiters are not included in the results, multiple delimiters in a row count as one."
+	
+	| separators in token |
+	separators := delimiters isCharacter ifTrue: [ { delimiters } ] ifFalse: [ delimiters ].
+	in := self readStream.
+	^ OrderedCollection streamContents: [ :tokens |
+		[ in atEnd ] whileFalse: [
+			token := self class streamContents: [ :out |
+				[ in atEnd or: [ separators includes: in peek ] ] whileFalse: [
+					out nextPut: in next ] ].
+			token isEmpty ifFalse: [ tokens nextPut: token ].
+			[ in atEnd not and: [ separators includes: in peek ] ] whileTrue: [
+				in next ] ] ]
+]
+
+{ #category : #accessing }
 UTF8String >> first [
 	"Return my first Character.
 	Signal CollectionIsEmpty when there is no such character."
@@ -410,6 +429,24 @@ UTF8String >> first [
 	^ self isAscii 
 		ifTrue: [ bytes first asCharacter ] 
 		ifFalse: [ self decodeCharacterAt: 1 ]
+]
+
+{ #category : #formatting }
+UTF8String >> format: collection [ 
+	"Format the receiver by interpolating elements from collection (see String>>#format:)"
+	
+	^ self class streamContents: [ :result | | stream |
+		stream := self readStream.
+		[ stream atEnd ] whileFalse: [ | currentChar | 
+			(currentChar := stream next) == ${
+				ifTrue: [ | expression key | 
+					expression := stream upTo: $}.
+					key := Integer readFrom: expression ifFail: [ expression ].
+					result nextPutAll: (collection at: key) asString asUTF8String ]
+				ifFalse: [
+					currentChar == $\
+						ifTrue: [ stream atEnd ifFalse: [ result nextPut: stream next ] ]
+						ifFalse: [ result nextPut: currentChar ] ] ] ]
 ]
 
 { #category : #comparing }
@@ -495,6 +532,13 @@ UTF8String >> isAscii [
 	"Return true when I am pure 7-bit ASCII, which means each character is encoded as one byte."
 	
 	^ bytes size = count
+]
+
+{ #category : #testing }
+UTF8String >> isByteString [
+	"We are not compatible with a system ByteString"
+	
+	^ false
 ]
 
 { #category : #testing }
