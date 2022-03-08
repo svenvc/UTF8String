@@ -1,2 +1,2 @@
 # UTF8String
-An alternative String implementation for Pharo using an UTF8 encoded representation
+An proof of concept / prototype alternative String implementation for Pharo using a variable length UTF8 encoded internal representation.
