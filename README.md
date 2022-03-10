@@ -16,14 +16,14 @@ Many encodings are in common use, but today, UTF8 has basically won, as it is th
 There is a real cost associated with encoding and decoding, especially with a variable length encoding such as UTF8.
 
 So one might ask the question: could we not use UTF8 as the internal representation of Strings.
-Some other programming languages, most notably Swift, took this road year ago.
+Some other programming languages, most notably Swift, took this road years ago.
 
 
 ## Implementation
 
 UTF8String is concept / prototype alternative String implementation for Pharo
 using a variable length UTF8 encoded internal representation to explore this idea.
-Furthermore UTF8String is readonly.
+Furthermore UTF8String is readonly (no #at:put:).
 
 The main problem with UTF8 is that it is a variable length encoding, with Characters being encoded using 1 to 4 bytes.
 This means two things: indexing is much harder, as it basically comes down to a linear scan
@@ -41,16 +41,45 @@ The UTF8String implementation just stores the UTF8 encoded bytes.
 It tries to avoid indexing and counting if at all possible.
 If indexing or the character count are needed, a single scan is performed,
 that creates an index every stride (32) characters,
-while also storing the length.
+while also storing the length (#computeCountAndIndex)
 Further operations can then be performed faster.
+The key internal operation being:
+
+- #byteIndexAt: characterIndex
+- #characterIndexAt: byteIndex
+
+By using the index, the linear search is limited to stride (32) characters at the most.
 
 
 ## Operations
 
 A surprising number of operations are possible that avoid indexing
-or the character count: equality, hashing, character inclusion, substring searching.
+or the character count:
+
+- equality (#=)
+- hashing (#hash)
+- character inclusion (#includes:)
+- empty test (#isEmpty)
+- substring searching (#includesSubstring:)
+- prefix/suffix matching (#beginsWith: #endsWith:)
+- concatenation (#,)
+
 Many other operation can be written using only a single (partial) scan:
-finding tokens or formatting by interpolation.
+
+- finding tokens (#findTokens:)
+- formatting by interpolation (#format:)
+- printing (#printOn:)
+- comparing/sorting (#threeWayCompareTo: #< #<= #>= #>)
+- partial copying (#copyUpTo:)
+- enumeration (#do #reverseDo: #collect: #readStream)
+
+On the other hand, many traditional operation trigger indexing and character counting:
+
+- indexing (#at:)
+- counting the characters (#size:)
+- convenience accessors (#first #last)
+- finding the index of a character or substring (#indexOf:[startingAt:] #indexOfSubCollection:)
+- substring selection (#copyFrom:to:)
 
 
 ## Discussion
@@ -61,6 +90,7 @@ Not every algorithm is fully optimal, more specific loops are possible.
 When creating a UTF8String on UTF8 encoded bytes, this is a zero cost operation
 only if we assume the encoding is correct. A validate operation is available
 to check this, but that defeats the speed advantage for the most part.
+BTW, validate automatically does indexing and character counting.
 
 An aspect that was ignored is the concept of Unicode normalization with respect to concatenation.
 This is a hard subject has been solved in Pharo using external code, but not integrated in this implementation.
