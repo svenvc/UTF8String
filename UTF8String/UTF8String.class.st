@@ -181,7 +181,8 @@ UTF8String >> at: characterIndex [
 
 { #category : #initialization }
 UTF8String >> beAscii [
-	"Mark me as being pure 7-bit ASCII, which means each character is encoded as one byte"
+	"Mark me as being pure 7-bit ASCII, which means each character is encoded as one byte.
+	This is an important optimisation as it prevents counting, scanning and indexing."
 	
 	count := bytes size.
 	index := Array empty
@@ -239,7 +240,7 @@ UTF8String >> characterIndexAt: byteIndex [
 			 		ifFalse: [ 
 						byteCursor := index at: lower. 
 						characterIndex := (lower * self stride) + 1 ] ] ].
-	[ byteCursor < bytes size ] whileTrue: [
+	[ byteCursor <= bytes size ] whileTrue: [
 		byteCursor = byteIndex 
 			ifTrue: [ ^ characterIndex ].
 		byteCursor := byteCursor + (self encodedByteCountAt: byteCursor).
@@ -532,8 +533,11 @@ UTF8String >> indexOfSubCollection: aSubUTF8String [
 
 { #category : #testing }
 UTF8String >> isAscii [
-	"Return true when I am pure 7-bit ASCII, which means each character is encoded as one byte."
+	"Return true when I am pure 7-bit ASCII, which means each character is encoded as one byte.
+	It is an important optimisation to know this upfront, see #beAscii, 
+	as it prevents counting, scanning and indexing."
 	
+	count ifNil: [ self computeCountAndIndex ].
 	^ bytes size = count
 ]
 

@@ -64,6 +64,21 @@ UTF8StringTest >> testAsUppercase [
 ]
 
 { #category : #tests }
+UTF8StringTest >> testAscii [
+	| str |
+	str := 'ABC' asUTF8String.
+	self assert: str isAscii.
+	str := 'ABC' asUTF8String.
+	str beAscii.
+	self assert: str isAscii.
+	str := 'DéF' asUTF8String.
+	self deny: str isAscii.
+	str := Character alphabet asString asUTF8String.
+	self assert: str isAscii.
+	self assert: UTF8String empty isAscii
+]
+
+{ #category : #tests }
 UTF8StringTest >> testCapitalized [
 	self 
 		assert: (UTF8String fromSystemString: self smallString) capitalized 
@@ -196,7 +211,11 @@ UTF8StringTest >> testIndexOf [
 	str := UTF8String fromSystemString: self normalString.
 	self assert: (str indexOf: $L) equals: 1.
 	self assert: (str indexOf: $€) equals: 26.
-	self assert: (str indexOf: $A) equals: 0
+	self assert: (str indexOf: $A) equals: 0.
+	str := UTF8String fromSystemString: 'áb'.
+	self assert: (str indexOf: $á) equals: 1.
+	self assert: (str indexOf: $b) equals: 2.
+	self assert: (str indexOf: $X) equals: 0
 ]
 
 { #category : #tests }
